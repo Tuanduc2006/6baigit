@@ -1,41 +1,61 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class Card : MonoBehaviour
 {
-    [HideInInspector] public int id; // Số định danh để biết cặp nào giống nhau
-    [HideInInspector] public Sprite frontImage; // Ảnh mặt trước (hình quả táo, cam...)
-    public Sprite backImage;  // Ảnh mặt sau (hình dấu hỏi)
+    public int cardID;
+    public Image cardImage;
+    public Sprite backSprite;
+    private Sprite frontSprite;
 
-    private Image img;
-    private Button btn;
-    private GameManager gameManager;
+    private Button button;
 
-    void Awake()
+    void Start()
     {
-        img = GetComponent<Image>();
-        btn = GetComponent<Button>();
-        // Tìm đối tượng GameManager trong cảnh để báo cáo khi được click
-        gameManager = Object.FindFirstObjectByType<GameManager>();
-
-        btn.onClick.AddListener(OnCardClick); // Tự động gán sự kiện click
+        button = GetComponent<Button>();
+        button.onClick.AddListener(() => GameManager.Instance.CardClicked(this));
     }
 
-    public void OnCardClick()
+    public void SetupCard(CardData data)
     {
-        // Hiện ảnh mặt trước
-        img.sprite = frontImage;
-        // Báo cho GameManager biết thẻ này vừa được lật
-        gameManager.CardClicked(this);
+        cardID = data.cardID;
+        frontSprite = data.frontSprite;
+        cardImage.sprite = backSprite;
+
+        // Đảm bảo thẻ luôn sáng rõ 100% (Alpha = 1) lúc bắt đầu ván mới
+        // (Phòng trường hợp Unity nhớ nhầm trạng thái mờ của ván trước)
+        Color c = cardImage.color;
+        c.a = 1f;
+        cardImage.color = c;
     }
 
-    public void Close()
+    public void FlipUp()
     {
-        img.sprite = backImage; // Úp mặt lại
+        button.interactable = false;
+        transform.DORotate(new Vector3(0, 90, 0), 0.15f).OnComplete(() =>
+        {
+            cardImage.sprite = frontSprite;
+            transform.DORotate(new Vector3(0, 0, 0), 0.15f);
+        });
     }
 
-    public void SetMatched()
+    public void FlipDown()
     {
-        btn.interactable = false; // Khóa nút nếu đã tìm đúng cặp
+        transform.DORotate(new Vector3(0, 90, 0), 0.15f).OnComplete(() =>
+        {
+            cardImage.sprite = backSprite;
+            transform.DORotate(new Vector3(0, 0, 0), 0.15f).OnComplete(() =>
+            {
+                button.interactable = true;
+            });
+        });
+    }
+
+    public void FadeOut()
+    {
+        // Chỉnh Alpha về 0.5 (Mờ đi 50%) trong vòng 0.5 giây
+        // KHÔNG dùng lệnh SetActive(false) nữa để thẻ được giữ nguyên trên bảng
+        cardImage.DOFade(0.5f, 0.5f);
     }
 }

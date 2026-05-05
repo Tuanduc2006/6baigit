@@ -1,54 +1,56 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    public GameObject cardPrefab;  // Kéo cái Card Prefab vào đây
-    public Transform gamePanel;    // Kéo cái GamePanel vào đây
-    public Sprite[] frontSprites;  // Kéo 8 ảnh mặt trước vào đây
+    public static GameManager Instance;
 
-    private Card firstCard, secondCard;
-    private bool isChecking = false;
-    private int pairsFound = 0;
+    public GameObject cardPrefab;
+    public Transform gameBoard;
+    public List<CardData> cardDataList;
+
+    private List<CardData> deck = new List<CardData>();
+
+    private Card firstCard;
+    private Card secondCard;
+    private bool isChecking;
+
+    void Awake()
+    {
+        Instance = this;
+    }
 
     void Start()
     {
-        GenerateCards();
+        SetupGame();
     }
 
-    void GenerateCards()
+    void SetupGame()
     {
-        // 1. Tạo danh sách 16 ID (8 cặp từ 0 đến 7)
-        List<int> cardIDs = new List<int>();
-        for (int i = 0; i < 8; i++)
+        deck.AddRange(cardDataList);
+        deck.AddRange(cardDataList);
+
+        for (int i = 0; i < deck.Count; i++)
         {
-            cardIDs.Add(i);
-            cardIDs.Add(i);
+            CardData temp = deck[i];
+            int randomIndex = Random.Range(i, deck.Count);
+            deck[i] = deck[randomIndex];
+            deck[randomIndex] = temp;
         }
 
-        // 2. Trộn ngẫu nhiên danh sách ID (Shuffle)
-        for (int i = 0; i < cardIDs.Count; i++)
+        foreach (CardData data in deck)
         {
-            int temp = cardIDs[i];
-            int randomIndex = Random.Range(i, cardIDs.Count);
-            cardIDs[i] = cardIDs[randomIndex];
-            cardIDs[randomIndex] = temp;
-        }
-
-        // 3. Sinh ra 16 thẻ bài trong GamePanel
-        foreach (int id in cardIDs)
-        {
-            GameObject newObj = Instantiate(cardPrefab, gamePanel);
-            Card cardScript = newObj.GetComponent<Card>();
-            cardScript.id = id;
-            cardScript.frontImage = frontSprites[id];
+            GameObject newCard = Instantiate(cardPrefab, gameBoard);
+            newCard.GetComponent<Card>().SetupCard(data);
         }
     }
 
     public void CardClicked(Card clickedCard)
     {
         if (isChecking || clickedCard == firstCard) return;
+
+        clickedCard.FlipUp();
 
         if (firstCard == null)
         {
@@ -57,28 +59,28 @@ public class GameManager : MonoBehaviour
         else
         {
             secondCard = clickedCard;
-            StartCoroutine(CheckForMatch());
+            StartCoroutine(CheckMatch());
         }
     }
 
-    IEnumerator CheckForMatch()
+    IEnumerator CheckMatch()
     {
         isChecking = true;
-        yield return new WaitForSeconds(0.6f); // Đợi một chút để người chơi kịp nhìn
 
-        if (firstCard.id == secondCard.id)
+        // Đã tăng thời gian chờ lên 1 giây để bạn nhìn rõ 2 thẻ
+        yield return new WaitForSeconds(1.0f);
+
+        if (firstCard.cardID == secondCard.cardID)
         {
-            // Nếu đúng cặp
-            firstCard.SetMatched();
-            secondCard.SetMatched();
-            pairsFound++;
-            if (pairsFound == 8) Debug.Log("BẠN THẮNG RỒI!");
+            // GIỐNG NHAU: Làm mờ và biến mất
+            firstCard.FadeOut();
+            secondCard.FadeOut();
         }
         else
         {
-            // Nếu sai cặp -> Úp lại
-            firstCard.Close();
-            secondCard.Close();
+            // KHÁC NHAU: Lật úp lại
+            firstCard.FlipDown();
+            secondCard.FlipDown();
         }
 
         firstCard = null;
