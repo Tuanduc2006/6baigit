@@ -1,41 +1,41 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PipeSpawner : MonoBehaviour
 {
     public GameObject pipePrefab;
-    public float spawnInterval = 2f;
-    public float minY = -1.5f;
-    public float maxY = 1.5f;
-
-    float timer;
-    float spawnX;
-
-    void Start()
-    {
-        float camHalfWidth = Camera.main.orthographicSize * Camera.main.aspect;
-        spawnX = camHalfWidth + 2f;
-    }
-
-    void OnEnable()
-    {
-        timer = spawnInterval;
-    }
+    public float baseSpawnRate = 2f;  // Thời gian (giây) mặc định giữa 2 lần sinh ống
+    private float timer = 0f;
+    public float heightOffset = 2.5f;
 
     void Update()
     {
-        if (GameManager.instance.state != GameState.Playing) return;
+        if (!GameManager.instance.gameStarted) return;
 
-        timer -= Time.deltaTime;
-        if (timer <= 0f)
+        // Tính thời gian chờ thực tế (Game càng nhanh, chờ càng ít)
+        float currentSpawnRate = baseSpawnRate / GameManager.instance.globalSpeed;
+
+        // Giới hạn để ống đẻ ra không bị dính sát vào nhau (Nhanh nhất là 0.8 giây 1 ống)
+        if (currentSpawnRate < 0.8f) currentSpawnRate = 0.8f;
+
+        if (timer < currentSpawnRate)
+        {
+            timer += Time.deltaTime;
+        }
+        else
         {
             SpawnPipe();
-            timer = spawnInterval;
+            timer = 0f;
         }
     }
 
     void SpawnPipe()
     {
-        float y = Random.Range(minY, maxY);
-        Instantiate(pipePrefab, new Vector3(spawnX, y, 0f), Quaternion.identity);
+        float lowestPoint = transform.position.y - heightOffset;
+        float highestPoint = transform.position.y + heightOffset;
+
+        float randomY = Random.Range(lowestPoint, highestPoint);
+
+        Vector3 spawnPosition = new Vector3(transform.position.x, randomY, 0);
+        Instantiate(pipePrefab, spawnPosition, Quaternion.identity);
     }
 }

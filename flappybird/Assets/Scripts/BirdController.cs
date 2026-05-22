@@ -2,84 +2,78 @@
 
 public class BirdController : MonoBehaviour
 {
-    public float jumpForce = 5f;
-    Rigidbody2D rb;
-    bool canControl = false;
+    [Header("Cài đặt bay")]
+    public float jumpForce = 7f;
+    public float smoothRotation = 5f;
 
-    void Awake()
+    private Rigidbody2D rb;
+    private Animator anim;
+    public bool isDead = false;
+
+    void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        rb.simulated = false;
+        anim = GetComponent<Animator>();
+
+        // Khóa vật lý lúc đầu để chim lơ lửng, không bị rơi
+        rb.bodyType = RigidbodyType2D.Kinematic;
     }
 
     void Update()
     {
-        if (!canControl) return;
+        if (isDead) return;
 
-        if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Space))
+        // Nhận diện click hoặc chạm màn hình
+        if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
         {
-            AudioManager.instance.PlayPress();
+            // Nếu game chưa bắt đầu thì chặn lại, không cho làm gì cả
+            if (!GameManager.instance.gameStarted) return;
+
+            Fly();
         }
 
-        if (Input.GetMouseButtonUp(0) || Input.GetKeyUp(KeyCode.Space))
+        // Nếu game đã bắt đầu (bấm nút) mà chim vẫn đang bị khóa vật lý -> Mở khóa
+        if (GameManager.instance.gameStarted && rb.bodyType == RigidbodyType2D.Kinematic)
         {
-            Flap();
-            AudioManager.instance.PlayRelease();
+            rb.bodyType = RigidbodyType2D.Dynamic;
+            Fly(); // Tự động nảy lên nhịp đầu tiên cho mượt
         }
     }
 
-
-    void Flap()
+    void FixedUpdate()
     {
-        rb.linearVelocity = Vector2.zero;
+        // Chỉ xoay đầu khi game đang chạy và chim đã được mở khóa vật lý
+        if (!isDead && GameManager.instance.gameStarted && rb.bodyType == RigidbodyType2D.Dynamic)
+        {
+            float angle = Mathf.Clamp((rb.linearVelocity.y * 10f), -90f, 45f);
+            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0, 0, angle), Time.deltaTime * smoothRotation);
+        }
+    }
+
+    void Fly()
+    {
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
         rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+
+        anim.SetTrigger("Flap");
+        GameManager.instance.PlayFlapSound();
     }
 
-    public void EnableControl()
+    private void OnCollisionEnter2D(Collision2D collision)
     {
-        canControl = true;
-        rb.simulated = true;
+        if (isDead) return;
+
+        isDead = true;
+        GameManager.instance.GameOver();
+        Debug.Log("Chim đã va chạm và Game Over!");
     }
 
-    public void DisableControl()
+    private void OnTriggerEnter2D(Collider2D collision)
     {
-        canControl = false;
-        rb.simulated = false;
-    }
-
-    public void ResetBird()
-    {
-        canControl = false;
-        rb.simulated = false;
-        rb.linearVelocity = Vector2.zero;
-        transform.position = Vector3.zero; // hoặc vị trí spawn
-    }
-
-    void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (GameManager.instance.state != GameState.Playing) return;
-
-        if (collision.gameObject.CompareTag("Pipe"))
+        if (!isDead && collision.gameObject.CompareTag("Score"))
         {
-            AudioManager.instance.PlayDiePipe();
-            GameManager.instance.GameOver();
-        }
-        else if (collision.gameObject.CompareTag("Ground"))
-        {
-            AudioManager.instance.PlayDieFall();
-            GameManager.instance.GameOver();
+            GameManager.instance.AddScore();
+            Debug.Log("Đã qua ống thành công, +1 điểm!");
         }
     }
-
-
-    void OnTriggerEnter2D(Collider2D other)
-    {
-        if (GameManager.instance.state != GameState.Playing) return;
-
-        if (other.CompareTag("ScoreZone"))
-        {
-            ScoreManager.instance.AddScore();
-        }
-    }
-
 }

@@ -4,10 +4,7 @@
 TagManager:
   serializedVersion: 3
   tags:
-  - Pipe
-  - Bird
-  - Ground
-  - ScoreZone
+  - Score
   layers:
   - Default
   - TransparentFX
@@ -44,21 +41,6 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
-    locked: 0
-  - name: Background
-    uniqueID: 4203140957
-    locked: 0
-  - name: Bird
-    uniqueID: 2649983903
-    locked: 0
-  - name: Pipe
-    uniqueID: 3045542121
-    locked: 0
-  - name: Ground
-    uniqueID: 3634487559
-    locked: 0
-  - name: Tap
-    uniqueID: 10974305
     locked: 0
   m_RenderingLayers:
   - Default
