@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI; // THÊM THƯ VIỆN NÀY ĐỂ ĐỔI ẢNH NÚT BẤM
 
 public class GameManager : MonoBehaviour
 {
@@ -12,9 +13,9 @@ public class GameManager : MonoBehaviour
     public int score = 0;
     private int bestScore = 0;
 
-    [Header("Độ khó động (Dynamic Difficulty)")]
-    public float globalSpeed = 1f; // Tốc độ game hiện tại (1 là bình thường)
-    public float speedIncreaseRate = 0.02f; // Mỗi giây tốc độ tăng thêm bao nhiêu
+    [Header("Độ khó động")]
+    public float globalSpeed = 1f;
+    public float speedIncreaseRate = 0.02f;
 
     [Header("Giao diện UI")]
     public GameObject startPanel;
@@ -23,12 +24,18 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI finalScoreText;
     public TextMeshProUGUI finalBestText;
 
-    [Header("Âm thanh")]
+    [Header("Âm thanh & Nút Bật/Tắt")]
     public AudioSource audioSource;
     public AudioClip flapSound;
     public AudioClip scoreSound;
     public AudioClip hitSound;
     public AudioClip gameOverSound;
+
+    // Các biến mới cho nút Âm thanh
+    public Image audioButtonImage; // Nơi chứa Component Image của nút Audio
+    public Sprite soundOnSprite;   // Ảnh cái loa bật
+    public Sprite soundOffSprite;  // Ảnh cái loa tắt (có dấu gạch)
+    private bool isMuted = false;  // Biến lưu trí nhớ xem đang bật hay tắt
 
     void Awake()
     {
@@ -39,10 +46,23 @@ public class GameManager : MonoBehaviour
     {
         Time.timeScale = 1f;
         gameOverPanel.SetActive(false);
-        globalSpeed = 1f; // Reset độ khó về mức cơ bản khi mới vào ván
+        globalSpeed = 1f;
 
         bestScore = PlayerPrefs.GetInt("DiemCaoNhat", 0);
         inGameScoreText.text = score.ToString();
+
+        // --- KHỞI TẠO TRẠNG THÁI ÂM THANH ---
+        // Lấy trí nhớ từ máy (0 là bật, 1 là tắt)
+        isMuted = PlayerPrefs.GetInt("MuteState", 0) == 1;
+
+        // Điều khiển âm lượng tổng của cả game
+        AudioListener.volume = isMuted ? 0f : 1f;
+
+        // Cập nhật đúng ảnh cho cái nút
+        if (audioButtonImage != null)
+        {
+            audioButtonImage.sprite = isMuted ? soundOffSprite : soundOnSprite;
+        }
 
         if (isRestart)
         {
@@ -59,15 +79,27 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // Nếu game đang chạy, tăng dần tốc độ theo thời gian
         if (gameStarted && Time.timeScale > 0)
         {
-            // Giới hạn tốc độ tối đa (ví dụ gấp 3 lần bình thường) để ống không trôi nhanh đến mức xuyên qua chim
             if (globalSpeed < 3f)
             {
                 globalSpeed += speedIncreaseRate * Time.deltaTime;
             }
         }
+    }
+
+    // --- HÀM MỚI: BẤM NÚT ĐỂ ĐẢO TRẠNG THÁI ÂM THANH ---
+    public void ToggleAudio()
+    {
+        isMuted = !isMuted; // Đảo ngược trạng thái (đang tắt thì thành bật, đang bật thì thành tắt)
+
+        AudioListener.volume = isMuted ? 0f : 1f; // Tắt/bật âm thanh tổng
+
+        // Đổi ảnh tương ứng
+        audioButtonImage.sprite = isMuted ? soundOffSprite : soundOnSprite;
+
+        // Lưu lại trí nhớ vào máy
+        PlayerPrefs.SetInt("MuteState", isMuted ? 1 : 0);
     }
 
     public void StartGame()
@@ -84,10 +116,14 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    public void PlayFlapSound()
+    public void Home()
     {
-        audioSource.PlayOneShot(flapSound);
+        isRestart = false;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
+
+    public void PlayFlapSound() { audioSource.PlayOneShot(flapSound); }
 
     public void AddScore()
     {
