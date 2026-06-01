@@ -1,7 +1,7 @@
-﻿using System.Collections; // BẮT BUỘC PHẢI CÓ DÒNG NÀY ĐỂ CHẠY ĐẾM NGƯỢC
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI; // BẮT BUỘC PHẢI CÓ DÒNG NÀY ĐỂ XÀI IMAGE
+using UnityEngine.UI;
 using TMPro;
 
 public class GameManager : MonoBehaviour
@@ -26,10 +26,10 @@ public class GameManager : MonoBehaviour
 
     [Header("Âm thanh")]
     public AudioSource bgMusic;
-    public AudioSource uiAudioSource; // Loa phát tiếng đếm ngược
+    public AudioSource uiAudioSource;
 
-    [Header("Hệ thống Đếm ngược (MỚI)")]
-    public Image countdownImage; // Nơi hiển thị hình ảnh số
+    [Header("Hệ thống Đếm ngược")]
+    public Image countdownImage;
     public Sprite sprite3;
     public Sprite sprite2;
     public Sprite sprite1;
@@ -45,17 +45,15 @@ public class GameManager : MonoBehaviour
         gameSpeed = 1f;
 
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
-        if (countdownImage != null) countdownImage.gameObject.SetActive(false); // Ẩn số lúc đầu
+        if (countdownImage != null) countdownImage.gameObject.SetActive(false);
 
         if (skipStartMenu)
         {
-            // NẾU BẤM RETRY: Bỏ qua Menu nhưng VẪN PHẢI ĐẾM NGƯỢC
             if (startMenuPanel != null) startMenuPanel.SetActive(false);
             StartCoroutine(CountdownRoutine());
         }
         else
         {
-            // LẦN ĐẦU VÀO GAME: Hiện Menu chờ bấm Start
             isGameStarted = false;
             if (startMenuPanel != null) startMenuPanel.SetActive(true);
             Time.timeScale = 0f;
@@ -78,44 +76,35 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // GẮN VÀO NÚT START
     public void StartGame()
     {
         if (startMenuPanel != null) startMenuPanel.SetActive(false);
-
-        // GỌI HÀM ĐẾM NGƯỢC THAY VÌ CHẠY GAME LUÔN
         StartCoroutine(CountdownRoutine());
     }
 
-    // --- HÀM XỬ LÝ ĐẾM NGƯỢC 3-2-1-GO ---
     IEnumerator CountdownRoutine()
     {
-        Time.timeScale = 0f; // Đóng băng mọi thứ trong lúc đếm
-        if (countdownImage != null) countdownImage.gameObject.SetActive(true); // Hiện bảng số
+        Time.timeScale = 0f;
+        if (countdownImage != null) countdownImage.gameObject.SetActive(true);
 
-        // 1. Số 3
         if (countdownImage != null) countdownImage.sprite = sprite3;
         if (uiAudioSource != null && sound3 != null) uiAudioSource.PlayOneShot(sound3);
-        yield return new WaitForSecondsRealtime(1f); // Chờ 1 giây thời gian thực
+        yield return new WaitForSecondsRealtime(1f);
 
-        // 2. Số 2
         if (countdownImage != null) countdownImage.sprite = sprite2;
         if (uiAudioSource != null && sound2 != null) uiAudioSource.PlayOneShot(sound2);
         yield return new WaitForSecondsRealtime(1f);
 
-        // 3. Số 1
         if (countdownImage != null) countdownImage.sprite = sprite1;
         if (uiAudioSource != null && sound1 != null) uiAudioSource.PlayOneShot(sound1);
         yield return new WaitForSecondsRealtime(1f);
 
-        // 4. GO
         if (uiAudioSource != null && soundGo != null) uiAudioSource.PlayOneShot(soundGo);
-        if (countdownImage != null) countdownImage.gameObject.SetActive(false); // Ẩn số đi
+        if (countdownImage != null) countdownImage.gameObject.SetActive(false);
 
-        // 5. BẮT ĐẦU GAME CHÍNH THỨC
         isGameStarted = true;
-        Time.timeScale = 1f; // Mở khóa thời gian
-        if (bgMusic != null) bgMusic.Play(); // Bật nhạc nền
+        Time.timeScale = 1f;
+        if (bgMusic != null) bgMusic.Play();
     }
 
     public void GameOver()
@@ -127,13 +116,23 @@ public class GameManager : MonoBehaviour
         if (gameOverPanel != null) gameOverPanel.SetActive(true);
     }
 
+    // Nút RETRY gọi hàm này
     public void RestartGame()
     {
-        skipStartMenu = true;
+        skipStartMenu = true; // Bỏ qua menu
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
+    // --- MỚI: HÀM GẮN VÀO NÚT HOME ---
+    public void ReturnToHome()
+    {
+        skipStartMenu = false; // BẮT BUỘC hiện lại Menu
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    // Nút EXIT gọi hàm này
     public void QuitGame()
     {
         Application.Quit();
