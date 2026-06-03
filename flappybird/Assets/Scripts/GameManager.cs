@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI; // THÊM THƯ VIỆN NÀY ĐỂ ĐỔI ẢNH NÚT BẤM
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -24,18 +24,23 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI finalScoreText;
     public TextMeshProUGUI finalBestText;
 
+    [Header("Hệ thống Combo")]
+    public GameObject comboContainer; // Cục chứa ảnh COMBO
+    public TextMeshProUGUI comboText; // Chữ số hiển thị (x1, x2...)
+
     [Header("Âm thanh & Nút Bật/Tắt")]
-    public AudioSource audioSource;
+    public AudioSource sfxAudioSource;
+    public AudioSource bgmAudioSource;
+
     public AudioClip flapSound;
     public AudioClip scoreSound;
     public AudioClip hitSound;
     public AudioClip gameOverSound;
 
-    // Các biến mới cho nút Âm thanh
-    public Image audioButtonImage; // Nơi chứa Component Image của nút Audio
-    public Sprite soundOnSprite;   // Ảnh cái loa bật
-    public Sprite soundOffSprite;  // Ảnh cái loa tắt (có dấu gạch)
-    private bool isMuted = false;  // Biến lưu trí nhớ xem đang bật hay tắt
+    public Image audioButtonImage;
+    public Sprite soundOnSprite;
+    public Sprite soundOffSprite;
+    private bool isMuted = false;
 
     void Awake()
     {
@@ -48,17 +53,15 @@ public class GameManager : MonoBehaviour
         gameOverPanel.SetActive(false);
         globalSpeed = 1f;
 
+        // Ẩn hệ thống Combo lúc mới vào game
+        if (comboContainer != null) comboContainer.SetActive(false);
+
         bestScore = PlayerPrefs.GetInt("DiemCaoNhat", 0);
         inGameScoreText.text = score.ToString();
 
-        // --- KHỞI TẠO TRẠNG THÁI ÂM THANH ---
-        // Lấy trí nhớ từ máy (0 là bật, 1 là tắt)
         isMuted = PlayerPrefs.GetInt("MuteState", 0) == 1;
-
-        // Điều khiển âm lượng tổng của cả game
         AudioListener.volume = isMuted ? 0f : 1f;
 
-        // Cập nhật đúng ảnh cho cái nút
         if (audioButtonImage != null)
         {
             audioButtonImage.sprite = isMuted ? soundOffSprite : soundOnSprite;
@@ -74,6 +77,7 @@ public class GameManager : MonoBehaviour
             gameStarted = false;
             startPanel.SetActive(true);
             inGameScoreText.gameObject.SetActive(false);
+            bgmAudioSource.Stop();
         }
     }
 
@@ -88,17 +92,11 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // --- HÀM MỚI: BẤM NÚT ĐỂ ĐẢO TRẠNG THÁI ÂM THANH ---
     public void ToggleAudio()
     {
-        isMuted = !isMuted; // Đảo ngược trạng thái (đang tắt thì thành bật, đang bật thì thành tắt)
-
-        AudioListener.volume = isMuted ? 0f : 1f; // Tắt/bật âm thanh tổng
-
-        // Đổi ảnh tương ứng
+        isMuted = !isMuted;
+        AudioListener.volume = isMuted ? 0f : 1f;
         audioButtonImage.sprite = isMuted ? soundOffSprite : soundOnSprite;
-
-        // Lưu lại trí nhớ vào máy
         PlayerPrefs.SetInt("MuteState", isMuted ? 1 : 0);
     }
 
@@ -107,6 +105,7 @@ public class GameManager : MonoBehaviour
         gameStarted = true;
         startPanel.SetActive(false);
         inGameScoreText.gameObject.SetActive(true);
+        bgmAudioSource.Play();
     }
 
     public void RestartGame()
@@ -123,22 +122,45 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    public void PlayFlapSound() { audioSource.PlayOneShot(flapSound); }
+    public void PlayFlapSound() { sfxAudioSource.PlayOneShot(flapSound); }
 
     public void AddScore()
     {
         score++;
         inGameScoreText.text = score.ToString();
-        audioSource.PlayOneShot(scoreSound);
+        sfxAudioSource.PlayOneShot(scoreSound);
+
+        // --- XỬ LÝ HỆ THỐNG COMBO ---
+        // Chia lấy phần nguyên (Ví dụ: 5/5 = 1, 9/5 = 1, 10/5 = 2)
+        int combo = score / 5;
+
+        if (combo > 0)
+        {
+            // Bật hình Combo lên nếu nó đang bị ẩn
+            if (comboContainer != null && !comboContainer.activeSelf)
+            {
+                comboContainer.SetActive(true);
+            }
+
+            // Cập nhật con số hiển thị
+            if (comboText != null)
+            {
+                comboText.text = "x" + combo.ToString();
+            }
+        }
     }
 
     public void GameOver()
     {
-        audioSource.PlayOneShot(hitSound);
-        audioSource.PlayOneShot(gameOverSound);
+        sfxAudioSource.PlayOneShot(hitSound);
+        sfxAudioSource.PlayOneShot(gameOverSound);
+        bgmAudioSource.Stop();
+
+        // Ẩn bảng Combo và Điểm lúc Game Over cho đỡ rối
+        if (comboContainer != null) comboContainer.SetActive(false);
+        inGameScoreText.gameObject.SetActive(false);
 
         gameOverPanel.SetActive(true);
-        inGameScoreText.gameObject.SetActive(false);
         finalScoreText.text = score.ToString();
 
         if (score > bestScore)
