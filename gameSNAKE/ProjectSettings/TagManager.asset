@@ -2,9 +2,8 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!78 &1
 TagManager:
-  serializedVersion: 3
-  tags:
-  - ScoreZone
+  serializedVersion: 2
+  tags: []
   layers:
   - Default
   - TransparentFX
@@ -39,17 +38,12 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: Background
+    uniqueID: 1713230317
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0
-  - name: Background
-    uniqueID: 1547276243
+  - name: Over
+    uniqueID: 1396741751
     locked: 0
-  - name: Gameplay
-    uniqueID: 3178775463
-    locked: 0
-  - name: UI
-    uniqueID: 1202760425
-    locked: 0
-  m_RenderingLayers:
-  - Default
