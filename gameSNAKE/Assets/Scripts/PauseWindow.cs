@@ -1,5 +1,3 @@
-﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,63 +10,100 @@ using UnityEngine.UI;
  */
 public class PauseWindow : MonoBehaviour
 {
-
-    // Instance static để GameLogic có thể gọi ShowStatic/HideStatic.
     private static PauseWindow instance;
 
     private void Awake()
     {
         instance = this;
 
-        // Căn bảng pause phủ đúng vị trí của Canvas/Panel.
-        transform.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
-        transform.GetComponent<RectTransform>().sizeDelta = Vector2.zero;
+        RectTransform rectTransform = transform.GetComponent<RectTransform>();
+        if (rectTransform != null)
+        {
+            rectTransform.anchoredPosition = Vector2.zero;
+            rectTransform.sizeDelta = Vector2.zero;
+        }
 
-        // Tìm nút Resume và gắn sự kiện click.
-        Button resumeButton = transform.Find("resumeBtn").GetComponent<Button>();
-        resumeButton.onClick.AddListener(ResumeButtonClicked);
+        Button resumeButton = GetChildButton("resumeBtn");
+        if (resumeButton != null)
+        {
+            resumeButton.onClick.AddListener(ResumeButtonClicked);
+        }
 
-        // Tìm nút Main Menu và gắn sự kiện click.
-        Button maiMenuButton = transform.Find("mainMenuBtn").GetComponent<Button>();
-        maiMenuButton.onClick.AddListener(MainMenuButtonClicked);
+        Button mainMenuButton = GetChildButton("mainMenuBtn");
+        if (mainMenuButton != null)
+        {
+            mainMenuButton.onClick.AddListener(MainMenuButtonClicked);
+        }
 
-        // Ẩn pause panel khi mới vào game.
         Hide();
     }
 
-    // Xử lý nút Resume.
+    private void OnDestroy()
+    {
+        if (instance == this)
+        {
+            instance = null;
+        }
+    }
+
+    private Button GetChildButton(string childName)
+    {
+        Transform child = transform.Find(childName);
+        if (child == null)
+        {
+            Debug.LogWarning("Không tìm thấy nút " + childName + " trong PauseWindow.");
+            return null;
+        }
+
+        Button button = child.GetComponent<Button>();
+        if (button == null)
+        {
+            Debug.LogWarning(childName + " chưa có component Button.");
+        }
+
+        return button;
+    }
+
     private void ResumeButtonClicked()
     {
         GameLogic.ResumeGame();
     }
 
-    // Xử lý nút Main Menu.
     private void MainMenuButtonClicked()
     {
+        Time.timeScale = 1f;
+
+        if (BackgroundMusicManager.Instance != null)
+        {
+            BackgroundMusicManager.Instance.StopMusic();
+        }
+
         Loader.Load(Loader.Scene.MainMenu);
     }
 
-    // Hiện bảng pause.
     private void Show()
     {
         gameObject.SetActive(true);
     }
 
-    // Ẩn bảng pause.
     private void Hide()
     {
         gameObject.SetActive(false);
     }
 
-    // Hàm static để script khác hiển thị pause panel.
     public static void ShowStatic()
     {
-        instance.Show();
+        if (instance != null)
+        {
+            instance.Show();
+        }
     }
 
-    // Hàm static để script khác ẩn pause panel.
     public static void HideStatic()
     {
-        instance.Hide();
+        if (instance != null)
+        {
+            instance.Hide();
+        }
     }
 }

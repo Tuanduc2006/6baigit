@@ -1,6 +1,3 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,20 +9,27 @@ using UnityEngine.UI;
  */
 public class ScoreWindow : MonoBehaviour
 {
-
-    // Text UI hiển thị điểm.
     private Text scoreText;
 
     private void Awake()
     {
-        // Tìm object con tên scoreText và lấy component Text.
-        scoreText = transform.Find("scoreText").GetComponent<Text>();
+        Transform scoreTransform = transform.Find("scoreText");
+        if (scoreTransform != null)
+        {
+            scoreText = scoreTransform.GetComponent<Text>();
+        }
+
+        if (scoreText == null)
+        {
+            Debug.LogWarning("Không tìm thấy Text scoreText trong ScoreWindow.");
+        }
     }
 
     private void Update()
     {
-        // Cập nhật điểm mỗi frame.
-        scoreText.text = GameLogic.GetScore().ToString();
+        if (scoreText != null)
+        {
+            scoreText.text = GameLogic.GetScore().ToString();
+        }
     }
-
 }
